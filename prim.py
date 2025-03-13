@@ -98,3 +98,88 @@ if __name__ == '__main__':
     plt.title("Minimalne drzewo rozpinające (Algorytm Prima)")
 
     plt.show()
+
+
+    def dijkstra(G, start=0):
+        """
+        Implementacja algorytmu Dijkstry na grafie G.
+        Zwraca dwa słowniki:
+          - distances: najkrótsza odległość od wierzchołka start do każdego wierzchołka,
+          - previous: poprzednik każdego wierzchołka na najkrótszej ścieżce.
+        """
+        distances = {node: float('inf') for node in G.nodes()}
+        previous = {node: None for node in G.nodes()}
+        distances[start] = 0
+        queue = [(0, start)]
+
+        while queue:
+            current_distance, current_node = heapq.heappop(queue)
+            if current_distance > distances[current_node]:
+                continue
+            for neighbor, attr in G[current_node].items():
+                weight = attr['weight']
+                new_distance = current_distance + weight
+                if new_distance < distances[neighbor]:
+                    distances[neighbor] = new_distance
+                    previous[neighbor] = current_node
+                    heapq.heappush(queue, (new_distance, neighbor))
+        return distances, previous
+
+
+    def reconstruct_path(previous, start, target):
+        """
+        Odtwarza najkrótszą ścieżkę od wierzchołka start do target przy użyciu słownika previous.
+        """
+        path = []
+        current = target
+        while current is not None:
+            path.append(current)
+            current = previous[current]
+        path.reverse()
+        return path
+
+
+    # Wykonanie algorytmu Dijkstry na tym samym grafie G
+    start_node = 0  # Możesz zmienić wierzchołek startowy
+    distances, previous = dijkstra(G, start_node)
+
+    # Odtwarzamy ścieżki dla każdego wierzchołka
+    shortest_paths = {}
+    for node in G.nodes():
+        shortest_paths[node] = reconstruct_path(previous, start_node, node)
+
+    # Wypisanie wyników w konsoli
+    print("Najkrótsze ścieżki z wierzchołka", start_node)
+    for node in G.nodes():
+        print(f"Do wierzchołka {node}: koszt = {distances[node]}, ścieżka = {shortest_paths[node]}")
+
+    # Wizualizacja grafu z nałożonym drzewem najkrótszych ścieżek (SPT)
+    SPT = nx.Graph()
+    SPT.add_nodes_from(G.nodes())
+    for node in G.nodes():
+        if previous[node] is not None:
+            SPT.add_edge(previous[node], node, weight=G[previous[node]][node]['weight'])
+
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(14, 6))
+
+    # Lewy panel: graf z nałożonymi najkrótszymi ścieżkami (SPT na czerwono)
+    plt.subplot(121)
+    nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=500)
+    nx.draw_networkx_labels(G, pos)
+    nx.draw_networkx_edges(G, pos, edge_color='gray')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=nx.get_edge_attributes(G, 'weight'))
+    nx.draw_networkx_edges(SPT, pos, edge_color='red', width=2)
+    plt.title("Graf z najkrótszymi ścieżkami (Dijkstra)")
+
+    # Prawy panel: tabela wyników
+    plt.subplot(122)
+    plt.axis('tight')
+    plt.axis('off')
+    table_data = [[node, distances[node], shortest_paths[node]] for node in sorted(G.nodes())]
+    table_columns = ["Wierzchołek", "Koszt", "Ścieżka"]
+    plt.table(cellText=table_data, colLabels=table_columns, loc='center')
+    plt.title("Tabela najkrótszych ścieżek")
+
+    plt.show()
+
