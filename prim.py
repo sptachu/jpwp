@@ -143,6 +143,115 @@ def generate_graph(n, p):
     return G
 
 
+def convert_graph_to_adj_dict(G):
+    """
+    Przekształca graf G (reprezentowany przez networkx) do postaci słownika sąsiedztwa.
+
+    Zwraca:
+      adj_dict - słownik, w którym kluczami są wierzchołki, a wartościami słowniki reprezentujące
+                 sąsiadów danego wierzchołka wraz z wagami krawędzi.
+
+    Przykład wyniku:
+      {
+          0: {1: 5, 2: 3},
+          1: {0: 5, 3: 2},
+          2: {0: 3},
+          3: {1: 2}
+      }
+    """
+    adj_dict = {}
+    for node in G.nodes():
+        # Tworzymy słownik sąsiadów dla bieżącego wierzchołka
+        neighbors = {}
+        for neighbor, data in G[node].items():
+            # Pobieramy wagę krawędzi, zakładając, że klucz 'weight' jest ustawiony
+            neighbors[neighbor] = data.get('weight')
+        adj_dict[node] = neighbors
+    return adj_dict
+
+
+# Przykładowe użycie:
+# adj_dict = convert_graph_to_adj_dict(G)
+# print(adj_dict)
+
+import heapq
+
+
+def prim_mst_from_adj(adj, start=None):
+    """
+    Wykonuje algorytm Prima na grafie reprezentowanym przez słownik sąsiedztwa.
+
+    Argumenty:
+      - adj: słownik sąsiedztwa reprezentujący graf, np.
+             {0: {1: 5, 2: 3}, 1: {0: 5, 3: 2}, ...}
+      - start: opcjonalny wierzchołek startowy; jeśli nie podany, wybierany jest pierwszy klucz ze słownika.
+
+    Zwraca:
+      - mst_adj: słownik sąsiedztwa reprezentujący minimalne drzewo rozpinające (MST).
+    """
+    if start is None:
+        start = next(iter(adj))  # Wybieramy pierwszy klucz jako wierzchołek startowy
+
+    visited = {start}
+    mst_edges = []  # Lista krawędzi MST w postaci (u, v, weight)
+    pq = []         # Kolejka priorytetowa: (waga, wierzchołek źródłowy, wierzchołek docelowy)
+
+    # Dodajemy krawędzie wychodzące z wierzchołka startowego
+    for neighbor, weight in adj[start].items():
+        heapq.heappush(pq, (weight, start, neighbor))
+
+    while pq and len(visited) < len(adj):
+        weight, u, v = heapq.heappop(pq)
+        if v in visited:
+            continue
+        visited.add(v)
+        mst_edges.append((u, v, weight))
+        # Dodajemy nowe krawędzie wychodzące z wierzchołka v
+        for neighbor, w in adj[v].items():
+            if neighbor not in visited:
+                heapq.heappush(pq, (w, v, neighbor))
+
+    # Tworzymy słownik sąsiedztwa dla MST
+    mst_adj = {node: {} for node in adj}
+    for u, v, weight in mst_edges:
+        mst_adj[u][v] = weight
+        mst_adj[v][u] = weight  # Ponieważ graf jest nieskierowany
+    return mst_adj
+
+# Przykładowe użycie:
+# mst_adj = prim_mst_from_adj(adj_dict)   # gdzie adj_dict to słownik sąsiedztwa wygenerowanego grafu
+# print(mst_adj)
+
+
+def calculate_mst_cost_dict(mst_adj_dict):
+    """
+    Oblicza całkowity koszt minimalnego drzewa rozpinającego
+    reprezentowanego jako słownik sąsiedztwa.
+
+    Argument:
+      - mst_adj: słownik sąsiedztwa reprezentujący MST, gdzie każda krawędź
+                 pojawia się w obu kierunkach.
+
+    Zwraca:
+      - total_cost: suma wag wszystkich krawędzi MST (każda krawędź liczona raz).
+    """
+    total_cost = 0
+    visited_edges = set()  # Zbiór do zapamiętania już uwzględnionych krawędzi
+
+    for u, neighbors in mst_adj.items():
+        for v, weight in neighbors.items():
+            edge = tuple(sorted((u, v)))  # Standaryzacja reprezentacji krawędzi
+            if edge not in visited_edges:
+                visited_edges.add(edge)
+                total_cost += weight
+    return total_cost
+
+
+# Przykładowe użycie:
+# mst_cost = calculate_mst_cost(mst_adj)
+# print("Całkowity koszt MST:", mst_cost)
+
+
 if __name__ == '__main__':
     # Parametry grafu: liczba wierzchołków i prawdopodobieństwo dodania krawędzi
     n = 10
@@ -182,48 +291,6 @@ if __name__ == '__main__':
 
     plt.show()
 
-
-    def kruskal_mst(G):
-        """
-        Implementacja algorytmu Kruskala dla grafu G.
-        Zwraca listę krawędzi MST w postaci (u, v, waga).
-        """
-        # Inicjalizacja struktury union-find
-        parent = {node: node for node in G.nodes()}
-        rank = {node: 0 for node in G.nodes()}
-
-        def find(node):
-            # Znajdź reprezentanta zbioru z kompresją ścieżki
-            if parent[node] != node:
-                parent[node] = find(parent[node])
-            return parent[node]
-
-        def union(u, v):
-            # Połącz dwa zbiory, zwracając True, jeśli połączenie nastąpiło
-            root_u = find(u)
-            root_v = find(v)
-            if root_u == root_v:
-                return False  # u i v są już w tym samym zbiorze
-            if rank[root_u] < rank[root_v]:
-                parent[root_u] = root_v
-            elif rank[root_u] > rank[root_v]:
-                parent[root_v] = root_u
-            else:
-                parent[root_v] = root_u
-                rank[root_u] += 1
-            return True
-
-        # Sortujemy krawędzie według wagi
-        sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'])
-        mst_edges = []
-
-        # Wybieramy krawędzie, które nie tworzą cyklu
-        for u, v, data in sorted_edges:
-            if union(u, v):
-                mst_edges.append((u, v, data['weight']))
-        return mst_edges
-
-
     # Uruchamiamy algorytm Kruskala na tym samym grafie G
     mst_edges_kruskal = kruskal_mst(G)
 
@@ -256,8 +323,6 @@ if __name__ == '__main__':
     plt.title("Minimalne drzewo rozpinające (Kruskal)")
 
     plt.show()
-
-
 
 
 
@@ -304,4 +369,12 @@ if __name__ == '__main__':
     plt.title("Tabela najkrótszych ścieżek")
 
     plt.show()
+
+    adj_dict = convert_graph_to_adj_dict(G)
+    mst_adj = prim_mst_from_adj(adj_dict)
+    print(mst_adj)
+    cost_mst_adj = calculate_mst_cost_dict(mst_adj)
+    print(cost_mst_adj)
+
+
 
