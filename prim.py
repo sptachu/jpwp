@@ -37,6 +37,85 @@ def prim_mst(G, start=0):
     return mst_edges
 
 
+def dijkstra(G, start=0):
+    """
+    Implementacja algorytmu Dijkstry na grafie G.
+    Zwraca dwa słowniki:
+      - distances: najkrótsza odległość od wierzchołka start do każdego wierzchołka,
+      - previous: poprzednik każdego wierzchołka na najkrótszej ścieżce.
+    """
+    distances = {node: float('inf') for node in G.nodes()}
+    previous = {node: None for node in G.nodes()}
+    distances[start] = 0
+    queue = [(0, start)]
+
+    while queue:
+        current_distance, current_node = heapq.heappop(queue)
+        if current_distance > distances[current_node]:
+            continue
+        for neighbor, attr in G[current_node].items():
+            weight = attr['weight']
+            new_distance = current_distance + weight
+            if new_distance < distances[neighbor]:
+                distances[neighbor] = new_distance
+                previous[neighbor] = current_node
+                heapq.heappush(queue, (new_distance, neighbor))
+    return distances, previous
+
+
+def reconstruct_path(previous, start, target):
+    """
+    Odtwarza najkrótszą ścieżkę od wierzchołka start do target przy użyciu słownika previous.
+    """
+    path = []
+    current = target
+    while current is not None:
+        path.append(current)
+        current = previous[current]
+    path.reverse()
+    return path
+
+
+def kruskal_mst(G):
+    """
+    Implementacja algorytmu Kruskala dla grafu G.
+    Zwraca listę krawędzi MST w postaci (u, v, waga).
+    """
+    # Inicjalizacja struktury union-find
+    parent = {node: node for node in G.nodes()}
+    rank = {node: 0 for node in G.nodes()}
+
+    def find(node):
+        # Znajdź reprezentanta zbioru z kompresją ścieżki
+        if parent[node] != node:
+            parent[node] = find(parent[node])
+        return parent[node]
+
+    def union(u, v):
+        # Połącz dwa zbiory, zwracając True, jeśli połączenie nastąpiło
+        root_u = find(u)
+        root_v = find(v)
+        if root_u == root_v:
+            return False  # u i v są już w tym samym zbiorze
+        if rank[root_u] < rank[root_v]:
+            parent[root_u] = root_v
+        elif rank[root_u] > rank[root_v]:
+            parent[root_v] = root_u
+        else:
+            parent[root_v] = root_u
+            rank[root_u] += 1
+        return True
+
+    # Sortujemy krawędzie według wagi
+    sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'])
+    mst_edges = []
+
+    # Wybieramy krawędzie, które nie tworzą cyklu
+    for u, v, data in sorted_edges:
+        if union(u, v):
+            mst_edges.append((u, v, data['weight']))
+    return mst_edges
+
 def generate_graph(n, p):
     """
     Generuje spójny graf z n wierzchołkami.
@@ -73,6 +152,10 @@ if __name__ == '__main__':
     # Oblicz MST przy użyciu algorytmu Prima (zaczynamy od wierzchołka 0)
     mst_edges = prim_mst(G, start=0)
 
+    # Obliczenie całkowitego kosztu MST (suma wag krawędzi)
+    total_cost = sum(weight for _, _, weight in mst_edges)
+    print("Całkowity koszt MST (Prim):", total_cost)
+
     # Utwórz nowy graf zawierający jedynie krawędzie MST
     MST = nx.Graph()
     MST.add_nodes_from(G.nodes())
@@ -100,43 +183,82 @@ if __name__ == '__main__':
     plt.show()
 
 
-    def dijkstra(G, start=0):
+    def kruskal_mst(G):
         """
-        Implementacja algorytmu Dijkstry na grafie G.
-        Zwraca dwa słowniki:
-          - distances: najkrótsza odległość od wierzchołka start do każdego wierzchołka,
-          - previous: poprzednik każdego wierzchołka na najkrótszej ścieżce.
+        Implementacja algorytmu Kruskala dla grafu G.
+        Zwraca listę krawędzi MST w postaci (u, v, waga).
         """
-        distances = {node: float('inf') for node in G.nodes()}
-        previous = {node: None for node in G.nodes()}
-        distances[start] = 0
-        queue = [(0, start)]
+        # Inicjalizacja struktury union-find
+        parent = {node: node for node in G.nodes()}
+        rank = {node: 0 for node in G.nodes()}
 
-        while queue:
-            current_distance, current_node = heapq.heappop(queue)
-            if current_distance > distances[current_node]:
-                continue
-            for neighbor, attr in G[current_node].items():
-                weight = attr['weight']
-                new_distance = current_distance + weight
-                if new_distance < distances[neighbor]:
-                    distances[neighbor] = new_distance
-                    previous[neighbor] = current_node
-                    heapq.heappush(queue, (new_distance, neighbor))
-        return distances, previous
+        def find(node):
+            # Znajdź reprezentanta zbioru z kompresją ścieżki
+            if parent[node] != node:
+                parent[node] = find(parent[node])
+            return parent[node]
+
+        def union(u, v):
+            # Połącz dwa zbiory, zwracając True, jeśli połączenie nastąpiło
+            root_u = find(u)
+            root_v = find(v)
+            if root_u == root_v:
+                return False  # u i v są już w tym samym zbiorze
+            if rank[root_u] < rank[root_v]:
+                parent[root_u] = root_v
+            elif rank[root_u] > rank[root_v]:
+                parent[root_v] = root_u
+            else:
+                parent[root_v] = root_u
+                rank[root_u] += 1
+            return True
+
+        # Sortujemy krawędzie według wagi
+        sorted_edges = sorted(G.edges(data=True), key=lambda x: x[2]['weight'])
+        mst_edges = []
+
+        # Wybieramy krawędzie, które nie tworzą cyklu
+        for u, v, data in sorted_edges:
+            if union(u, v):
+                mst_edges.append((u, v, data['weight']))
+        return mst_edges
 
 
-    def reconstruct_path(previous, start, target):
-        """
-        Odtwarza najkrótszą ścieżkę od wierzchołka start do target przy użyciu słownika previous.
-        """
-        path = []
-        current = target
-        while current is not None:
-            path.append(current)
-            current = previous[current]
-        path.reverse()
-        return path
+    # Uruchamiamy algorytm Kruskala na tym samym grafie G
+    mst_edges_kruskal = kruskal_mst(G)
+
+    # Obliczenie całkowitego kosztu MST (suma wag krawędzi)
+    total_cost_kruskal = sum(weight for _, _, weight in mst_edges_kruskal)
+    print("Całkowity koszt MST (Kruskal):", total_cost_kruskal)
+
+    # Budujemy graf reprezentujący MST uzyskane algorytmem Kruskala
+    MST_kruskal = nx.Graph()
+    MST_kruskal.add_nodes_from(G.nodes())
+    for u, v, weight in mst_edges_kruskal:
+        MST_kruskal.add_edge(u, v, weight=weight)
+
+    # Wizualizacja: oryginalny graf oraz MST (Kruskal)
+    pos = nx.spring_layout(G, seed=42)
+    plt.figure(figsize=(14, 6))
+
+    # Lewy panel: Oryginalny graf
+    plt.subplot(121)
+    nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray', node_size=500)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    plt.title("Graf początkowy")
+
+    # Prawy panel: MST uzyskane algorytmem Kruskala
+    plt.subplot(122)
+    nx.draw(MST_kruskal, pos, with_labels=True, node_color='lightgreen', edge_color='red', node_size=500, width=2)
+    mst_edge_labels = nx.get_edge_attributes(MST_kruskal, 'weight')
+    nx.draw_networkx_edge_labels(MST_kruskal, pos, edge_labels=mst_edge_labels)
+    plt.title("Minimalne drzewo rozpinające (Kruskal)")
+
+    plt.show()
+
+
+
 
 
     # Wykonanie algorytmu Dijkstry na tym samym grafie G
