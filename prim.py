@@ -174,7 +174,6 @@ def convert_graph_to_adj_dict(G):
 # adj_dict = convert_graph_to_adj_dict(G)
 # print(adj_dict)
 
-import heapq
 
 
 def prim_mst_from_adj(adj, start=None):
@@ -238,7 +237,7 @@ def calculate_mst_cost_dict(mst_adj_dict):
     total_cost = 0
     visited_edges = set()  # Zbiór do zapamiętania już uwzględnionych krawędzi
 
-    for u, neighbors in mst_adj.items():
+    for u, neighbors in mst_adj_prim.items():
         for v, weight in neighbors.items():
             edge = tuple(sorted((u, v)))  # Standaryzacja reprezentacji krawędzi
             if edge not in visited_edges:
@@ -247,9 +246,88 @@ def calculate_mst_cost_dict(mst_adj_dict):
     return total_cost
 
 
-# Przykładowe użycie:
-# mst_cost = calculate_mst_cost(mst_adj)
-# print("Całkowity koszt MST:", mst_cost)
+def kruskal_mst_from_adj(graph):
+    # Generowanie listy unikalnych krawędzi
+    edges = []
+    for u in graph:
+        for v, weight in graph[u].items():
+            if u < v:  # Zapobiega duplikatom
+                edges.append((weight, u, v))
+
+    # Sortowanie krawędzi rosnąco według wagi
+    edges.sort()
+
+    # Inicjalizacja struktur dla Union-Find
+    vertices = list(graph.keys())
+    parent = {v: v for v in vertices}
+    rank = {v: 0 for v in vertices}
+
+    # Funkcja find z kompresją ścieżki
+    def find(u):
+        while parent[u] != u:
+            parent[u] = parent[parent[u]]  # Kompresja ścieżki
+            u = parent[u]
+        return u
+
+    mst = []
+    for edge in edges:
+        weight, u, v = edge
+        root_u = find(u)
+        root_v = find(v)
+
+        if root_u != root_v:
+            mst.append((u, v, weight))
+            # Union z uwzględnieniem rangi
+            if rank[root_u] > rank[root_v]:
+                parent[root_v] = root_u
+            else:
+                parent[root_u] = root_v
+                if rank[root_u] == rank[root_v]:
+                    rank[root_v] += 1
+            # Przerwij jeśli mamy już n-1 krawędzi
+            if len(mst) == len(vertices) - 1:
+                break
+
+    # Konwersja na słownik sąsiedztwa
+    mst_graph = {}
+    for u, v, weight in mst:
+        mst_graph.setdefault(u, {})[v] = weight
+        mst_graph.setdefault(v, {})[u] = weight
+
+    sorted_nodes = sorted(mst_graph.keys(), key=lambda x: int(x))
+    sorted_mst = {node: mst_graph[node] for node in sorted_nodes}
+
+    return sorted_mst
+
+
+def dijkstra_mst_from_adj(graph, start):
+    # Inicjalizacja struktur danych
+    costs = {node: float('inf') for node in graph}
+    predecessors = {node: None for node in graph}
+    costs[start] = 0
+
+    # Kolejka priorytetowa przechowująca tuple (koszt, wierzchołek)
+    heap = [(0, start)]
+
+    while heap:
+        current_cost, current_node = heapq.heappop(heap)
+
+        # Pomijanie przestarzałych wpisów
+        if current_cost > costs[current_node]:
+            continue
+
+        # Przetwarzanie sąsiadów bieżącego węzła
+        for neighbor, weight in graph[current_node].items():
+            new_cost = current_cost + weight
+
+            # Aktualizacja jeśli znaleziono lepszą ścieżkę
+            if new_cost < costs[neighbor]:
+                costs[neighbor] = new_cost
+                predecessors[neighbor] = current_node
+                heapq.heappush(heap, (new_cost, neighbor))
+
+    return costs, predecessors
+
 
 
 if __name__ == '__main__':
@@ -371,10 +449,27 @@ if __name__ == '__main__':
     plt.show()
 
     adj_dict = convert_graph_to_adj_dict(G)
-    mst_adj = prim_mst_from_adj(adj_dict)
-    print(mst_adj)
-    cost_mst_adj = calculate_mst_cost_dict(mst_adj)
-    print(cost_mst_adj)
+    mst_adj_prim = prim_mst_from_adj(adj_dict)
+    print("prim słownik sąsiedztwa minimalnego drzewa: ", mst_adj_prim)
+    cost_mst_adj = calculate_mst_cost_dict(mst_adj_prim)
+    print("całkowity koszt minimalnego drzewa Prim: ", cost_mst_adj)
 
+    mst_adj_kruskal = kruskal_mst_from_adj(adj_dict)
+    print("Kruskal słownik sąsiedztwa minimalnego drzewa: ", mst_adj_kruskal)
+    cost_mst_adj_kruskal = calculate_mst_cost_dict(mst_adj_kruskal)
+    print("całkowity koszt minimalnego drzewa Prim: ", cost_mst_adj_kruskal)
 
+# Wykonanie algorytmu Dijkstry na tym samym grafie G
+    start_node = 0  # Możesz zmienić wierzchołek startowy
+    distances, previous = dijkstra_mst_from_adj(G, start_node)
+
+    # Odtwarzamy ścieżki dla każdego wierzchołka
+    shortest_paths = {}
+    for node in G.nodes():
+        shortest_paths[node] = reconstruct_path(previous, start_node, node)
+
+    # Wypisanie wyników w konsoli
+    print("Najkrótsze ścieżki z wierzchołka", start_node)
+    for node in G.nodes():
+        print(f"Do wierzchołka {node}: koszt = {distances[node]}, ścieżka = {shortest_paths[node]}")
 
