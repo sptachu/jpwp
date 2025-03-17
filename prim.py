@@ -301,26 +301,23 @@ def kruskal_mst_from_adj(graph):
 
 
 def dijkstra_mst_from_adj(graph, start):
-    # Inicjalizacja struktur danych
     costs = {node: float('inf') for node in graph}
     predecessors = {node: None for node in graph}
     costs[start] = 0
 
-    # Kolejka priorytetowa przechowująca tuple (koszt, wierzchołek)
     heap = [(0, start)]
 
     while heap:
         current_cost, current_node = heapq.heappop(heap)
 
-        # Pomijanie przestarzałych wpisów
         if current_cost > costs[current_node]:
             continue
 
-        # Przetwarzanie sąsiadów bieżącego węzła
-        for neighbor, weight in graph[current_node].items():
+        # Zmiana w sposobie pobierania wag - kluczowa poprawka
+        for neighbor, edge_data in graph[current_node].items():
+            weight = edge_data if isinstance(edge_data, (int, float)) else edge_data.get('weight', 0)
             new_cost = current_cost + weight
 
-            # Aktualizacja jeśli znaleziono lepszą ścieżkę
             if new_cost < costs[neighbor]:
                 costs[neighbor] = new_cost
                 predecessors[neighbor] = current_node
