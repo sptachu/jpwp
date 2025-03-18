@@ -326,6 +326,169 @@ def dijkstra_mst_from_adj(graph, start):
     return costs, predecessors
 
 
+def convert_networkx_to_edge_list(G):
+    """
+    Konwertuje graf zapisany w networkx do formatu listy krawędzi:
+      [wierzchołek, waga, wierzchołek].
+
+    Zakłada, że graf jest nieskierowany. Dla krawędzi, które nie posiadają atrybutu 'weight',
+    przypisywana jest wartość None.
+
+    Argument:
+      - G: graf utworzony przy użyciu biblioteki networkx.
+
+    Zwraca:
+      - edge_list: lista krawędzi w formacie [u, weight, v].
+    """
+    edge_list = []
+    for u, v, data in G.edges(data=True):
+        weight = data.get('weight', None)
+        edge_list.append([u, weight, v])
+    return edge_list
+
+
+# Przykładowe użycie:
+# edge_list = convert_networkx_to_edge_list(G)
+# print(edge_list)
+
+
+def prim_mst_edge_list(edge_list, start=None):
+    """
+    Wykonuje algorytm Prima na grafie przedstawionym jako tablica dwuwymiarowa:
+      [[u, waga, v], [u, waga, v], ...]
+
+    Funkcja pracuje bezpośrednio na podanej tablicy krawędzi, nie konwertując jej do innej reprezentacji.
+
+    Zwraca:
+      mst_edges - lista krawędzi MST w tym samym formacie.
+    """
+    # Ustalamy zbiór wierzchołków występujących w grafie
+    vertices = set()
+    for edge in edge_list:
+        u, weight, v = edge
+        vertices.add(u)
+        vertices.add(v)
+
+    # Jeśli nie podano wierzchołka startowego, wybieramy dowolny z grafu
+    if start is None:
+        start = next(iter(vertices))
+
+    visited = {start}
+    mst_edges = []
+
+    # Dopóki nie odwiedzimy wszystkich wierzchołków
+    while len(visited) < len(vertices):
+        candidate_edge = None
+        candidate_weight = float('inf')
+
+        # Przeszukujemy wszystkie krawędzie, aby znaleźć tę o najmniejszej wadze,
+        # która łączy odwiedzony wierzchołek z nieodwiedzonym.
+        for edge in edge_list:
+            u, weight, v = edge
+            if ((u in visited and v not in visited) or (
+                    v in visited and u not in visited)) and weight < candidate_weight:
+                candidate_edge = edge
+                candidate_weight = weight
+
+        # Jeśli nie znaleziono krawędzi, graf jest niespójny
+        if candidate_edge is None:
+            raise ValueError("Graf jest niespójny!")
+
+        # Dodajemy krawędź do MST
+        mst_edges.append(candidate_edge)
+
+        # Dodajemy do odwiedzonych nowy wierzchołek (ten, który nie był jeszcze odwiedzony)
+        u, weight, v = candidate_edge
+        if u in visited and v not in visited:
+            visited.add(v)
+        elif v in visited and u not in visited:
+            visited.add(u)
+
+    return mst_edges
+
+
+# Przykładowe użycie:
+# edge_list = [
+#     [0, 5, 1],
+#     [0, 3, 2],
+#     [1, 2, 2],
+#     [1, 6, 3],
+#     [2, 7, 3],
+#     [2, 4, 4],
+#     [3, 1, 4]
+# ]
+# mst = prim_mst_direct(edge_list)
+# print("Krawędzie MST:", mst)
+
+
+def cost_edge_list(edges):
+    return sum(waga for _, waga, _ in edges)
+
+
+def kruskal_mst_edge_list(edge_list):
+    """
+    Wykonuje algorytm Kruskala na grafie przedstawionym jako lista krawędzi w formacie:
+      [wierzchołek, waga, wierzchołek].
+
+    Zwraca:
+      mst_edges - lista krawędzi należących do MST, w tym samym formacie.
+    """
+    # Wyznaczamy zbiór wszystkich wierzchołków w grafie
+    vertices = set()
+    for edge in edge_list:
+        u, weight, v = edge
+        vertices.add(u)
+        vertices.add(v)
+
+    # Inicjalizacja struktury union-find
+    parent = {v: v for v in vertices}
+    rank = {v: 0 for v in vertices}
+
+    def find(x):
+        if parent[x] != x:
+            parent[x] = find(parent[x])
+        return parent[x]
+
+    def union(x, y):
+        rootX = find(x)
+        rootY = find(y)
+        if rootX == rootY:
+            return False
+        if rank[rootX] < rank[rootY]:
+            parent[rootX] = rootY
+        elif rank[rootX] > rank[rootY]:
+            parent[rootY] = rootX
+        else:
+            parent[rootY] = rootX
+            rank[rootX] += 1
+        return True
+
+    # Sortujemy krawędzie według wagi (rosnąco)
+    sorted_edges = sorted(edge_list, key=lambda e: e[1])
+
+    mst_edges = []
+    for edge in sorted_edges:
+        u, weight, v = edge
+        # Jeśli połączenie u i v nie tworzy cyklu, dodajemy krawędź do MST
+        if union(u, v):
+            mst_edges.append(edge)
+
+    return mst_edges
+
+
+# Przykładowe użycie:
+# edge_list = [
+#     [0, 5, 1],
+#     [0, 3, 2],
+#     [1, 2, 2],
+#     [1, 6, 3],
+#     [2, 7, 3],
+#     [2, 4, 4],
+#     [3, 1, 4]
+# ]
+# mst = kruskal_mst_from_edge_list(edge_list)
+# print("Krawędzie MST (Kruskal):", mst)
+
 
 if __name__ == '__main__':
     # Parametry grafu: liczba wierzchołków i prawdopodobieństwo dodania krawędzi
@@ -458,7 +621,7 @@ if __name__ == '__main__':
 
 # Wykonanie algorytmu Dijkstry na tym samym grafie G
     start_node = 0  # Możesz zmienić wierzchołek startowy
-    distances, previous = dijkstra_mst_from_adj(G, start_node)
+    distances, previous = dijkstra_mst_from_adj(adj_dict, start_node)
 
     # Odtwarzamy ścieżki dla każdego wierzchołka
     shortest_paths = {}
@@ -470,3 +633,12 @@ if __name__ == '__main__':
     for node in G.nodes():
         print(f"Do wierzchołka {node}: koszt = {distances[node]}, ścieżka = {shortest_paths[node]}")
 
+    # trzeci sposob zapisu grafów
+    # [wierzchołek, waga, wierzchołek])
+    G_edge_list = convert_networkx_to_edge_list(G)
+    edge_list_mst_prim = prim_mst_edge_list(G_edge_list)
+    cost_edge_list_mst_prim = cost_edge_list(edge_list_mst_prim)
+    print(cost_edge_list_mst_prim)
+    edge_list_mst_kruskal = kruskal_mst_edge_list(G_edge_list)
+    cost_edge_list_mst_kruskal = cost_edge_list(edge_list_mst_kruskal)
+    print(cost_edge_list_mst_kruskal)
