@@ -490,6 +490,103 @@ def kruskal_mst_edge_list(edge_list):
 # print("Krawędzie MST (Kruskal):", mst)
 
 
+def dijkstra_edge_list(edge_list, start=0):
+    """
+    Wykonuje algorytm Dijkstry na grafie reprezentowanym bezpośrednio jako lista krawędzi:
+      [wierzchołek, koszt, wierzchołek]
+
+    Argumenty:
+      - edge_list: lista krawędzi, np. [[0, 5, 1], [0, 3, 2], [1, 2, 2], ...]
+      - start: wierzchołek startowy
+
+    Zwraca:
+      - distances: słownik, gdzie kluczem jest wierzchołek, a wartością najkrótszy koszt dotarcia od 'start'
+      - previous: słownik poprzedników na najkrótszej ścieżce (umożliwiający odtworzenie ścieżki)
+    """
+    # Wyznaczamy zbiór wszystkich wierzchołków
+    vertices = set()
+    for u, cost, v in edge_list:
+        vertices.add(u)
+        vertices.add(v)
+
+    # Inicjalizacja odległości i poprzedników
+    distances = {v: float('inf') for v in vertices}
+    previous = {v: None for v in vertices}
+    distances[start] = 0
+
+    # Kolejka priorytetowa: (koszt dotarcia, wierzchołek)
+    pq = [(0, start)]
+    visited = set()
+
+    while pq:
+        current_cost, u = heapq.heappop(pq)
+        if u in visited:
+            continue
+        visited.add(u)
+        # Przeglądamy wszystkie krawędzie w liście, aby znaleźć te wychodzące z u
+        for a, cost, b in edge_list:
+            # Sprawdzamy, czy krawędź wychodzi z u (w obu kierunkach, bo graf jest nieskierowany)
+            if a == u and b not in visited:
+                new_cost = current_cost + cost
+                if new_cost < distances[b]:
+                    distances[b] = new_cost
+                    previous[b] = u
+                    heapq.heappush(pq, (new_cost, b))
+            elif b == u and a not in visited:
+                new_cost = current_cost + cost
+                if new_cost < distances[a]:
+                    distances[a] = new_cost
+                    previous[a] = u
+                    heapq.heappush(pq, (new_cost, a))
+
+    return distances, previous
+
+
+# Przykładowe użycie:
+# edge_list = [
+#     [0, 5, 1],
+#     [0, 3, 2],
+#     [1, 2, 2],
+#     [1, 6, 3],
+#     [2, 7, 3],
+#     [2, 4, 4],
+#     [3, 1, 4]
+# ]
+# start_vertex = 0
+# distances, previous = dijkstra_direct(edge_list, start_vertex)
+# print("Najkrótsze odległości:", distances)
+# print("Poprzednicy:", previous)
+
+
+def reconstruct_shortest_paths_edge_list(distances, previous):
+    """
+    Rekonstruuje najkrótsze ścieżki dla wszystkich wierzchołków na podstawie
+    słowników distances i previous.
+
+    Zwraca listę napisów w formacie:
+      "Do wierzchołka X: koszt = Y, ścieżka = [lista wierzchołków]"
+    """
+    result = []
+    for vertex in sorted(distances.keys()):
+        # Rekonstruujemy ścieżkę od startu do wierzchołka `vertex`
+        path = []
+        current = vertex
+        while current is not None:
+            path.append(current)
+            current = previous[current]
+        path.reverse()  # Odwracamy, aby ścieżka była od startu do celu
+
+        result.append(f"Do wierzchołka {vertex}: koszt = {distances[vertex]}, ścieżka = {path}")
+    return result
+
+
+# Przykładowe użycie:
+# distances, previous = dijkstra_direct(edge_list, start_vertex)
+# paths = reconstruct_shortest_paths(distances, previous)
+# for line in paths:
+#     print(line)
+
+
 if __name__ == '__main__':
     # Parametry grafu: liczba wierzchołków i prawdopodobieństwo dodania krawędzi
     n = 10
@@ -642,3 +739,7 @@ if __name__ == '__main__':
     edge_list_mst_kruskal = kruskal_mst_edge_list(G_edge_list)
     cost_edge_list_mst_kruskal = cost_edge_list(edge_list_mst_kruskal)
     print(cost_edge_list_mst_kruskal)
+    shortest_paths_edge_list_distances, shortest_paths_edge_list_previous = dijkstra_edge_list(G_edge_list)
+    paths = reconstruct_shortest_paths_edge_list(shortest_paths_edge_list_distances, shortest_paths_edge_list_previous)
+    for line in paths:
+        print(line)
