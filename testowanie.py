@@ -1,14 +1,12 @@
 import time
 
 import matplotlib
-
-matplotlib.use('TkAgg')  # Zmiana backendu na TkAgg, aby uniknąć błędu
-
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
 import heapq
 
+matplotlib.use('TkAgg')  # Zmiana backendu na TkAgg, aby uniknąć błędu
 
 def prim_mst(G, start=0):
     """
@@ -88,7 +86,6 @@ def kruskal_mst(G):
     rank = {node: 0 for node in G.nodes()}
 
     def find(node):
-        # Znajdź reprezentanta zbioru z kompresją ścieżki
         if parent[node] != node:
             parent[node] = find(parent[node])
         return parent[node]
@@ -148,18 +145,6 @@ def generate_graph(n, p):
 def convert_graph_to_adj_dict(G):
     """
     Przekształca graf G (reprezentowany przez networkx) do postaci słownika sąsiedztwa.
-
-    Zwraca:
-      adj_dict - słownik, w którym kluczami są wierzchołki, a wartościami słowniki reprezentujące
-                 sąsiadów danego wierzchołka wraz z wagami krawędzi.
-
-    Przykład wyniku:
-      {
-          0: {1: 5, 2: 3},
-          1: {0: 5, 3: 2},
-          2: {0: 3},
-          3: {1: 2}
-      }
     """
     adj_dict = {}
     for node in G.nodes():
@@ -172,23 +157,13 @@ def convert_graph_to_adj_dict(G):
     return adj_dict
 
 
-# Przykładowe użycie:
-# adj_dict = convert_graph_to_adj_dict(G)
-# print(adj_dict)
+
 
 
 
 def prim_mst_from_adj(adj, start=None):
     """
     Wykonuje algorytm Prima na grafie reprezentowanym przez słownik sąsiedztwa.
-
-    Argumenty:
-      - adj: słownik sąsiedztwa reprezentujący graf, np.
-             {0: {1: 5, 2: 3}, 1: {0: 5, 3: 2}, ...}
-      - start: opcjonalny wierzchołek startowy; jeśli nie podany, wybierany jest pierwszy klucz ze słownika.
-
-    Zwraca:
-      - mst_adj: słownik sąsiedztwa reprezentujący minimalne drzewo rozpinające (MST).
     """
     if start is None:
         start = next(iter(adj))  # Wybieramy pierwszy klucz jako wierzchołek startowy
@@ -219,22 +194,13 @@ def prim_mst_from_adj(adj, start=None):
         mst_adj[v][u] = weight  # Ponieważ graf jest nieskierowany
     return mst_adj
 
-# Przykładowe użycie:
-# mst_adj = prim_mst_from_adj(adj_dict)   # gdzie adj_dict to słownik sąsiedztwa wygenerowanego grafu
-# print(mst_adj)
+
 
 
 def calculate_mst_cost_dict(mst_adj_dict):
     """
     Oblicza całkowity koszt minimalnego drzewa rozpinającego
     reprezentowanego jako słownik sąsiedztwa.
-
-    Argument:
-      - mst_adj: słownik sąsiedztwa reprezentujący MST, gdzie każda krawędź
-                 pojawia się w obu kierunkach.
-
-    Zwraca:
-      - total_cost: suma wag wszystkich krawędzi MST (każda krawędź liczona raz).
     """
     total_cost = 0
     visited_edges = set()  # Zbiór do zapamiętania już uwzględnionych krawędzi
@@ -264,7 +230,6 @@ def kruskal_mst_from_adj(graph):
     parent = {v: v for v in vertices}
     rank = {v: 0 for v in vertices}
 
-    # Funkcja find z kompresją ścieżki
     def find(u):
         while parent[u] != u:
             parent[u] = parent[parent[u]]  # Kompresja ścieżki
@@ -290,7 +255,6 @@ def kruskal_mst_from_adj(graph):
             if len(mst) == len(vertices) - 1:
                 break
 
-    # Konwersja na słownik sąsiedztwa
     mst_graph = {}
     for u, v, weight in mst:
         mst_graph.setdefault(u, {})[v] = weight
@@ -315,7 +279,6 @@ def dijkstra_mst_from_adj(graph, start):
         if current_cost > costs[current_node]:
             continue
 
-        # Zmiana w sposobie pobierania wag - kluczowa poprawka
         for neighbor, edge_data in graph[current_node].items():
             weight = edge_data if isinstance(edge_data, (int, float)) else edge_data.get('weight', 0)
             new_cost = current_cost + weight
@@ -332,15 +295,6 @@ def convert_networkx_to_edge_list(G):
     """
     Konwertuje graf zapisany w networkx do formatu listy krawędzi:
       [wierzchołek, waga, wierzchołek].
-
-    Zakłada, że graf jest nieskierowany. Dla krawędzi, które nie posiadają atrybutu 'weight',
-    przypisywana jest wartość None.
-
-    Argument:
-      - G: graf utworzony przy użyciu biblioteki networkx.
-
-    Zwraca:
-      - edge_list: lista krawędzi w formacie [u, weight, v].
     """
     edge_list = []
     for u, v, data in G.edges(data=True):
@@ -349,20 +303,11 @@ def convert_networkx_to_edge_list(G):
     return edge_list
 
 
-# Przykładowe użycie:
-# edge_list = convert_networkx_to_edge_list(G)
-# print(edge_list)
 
 
 def prim_mst_edge_list(edge_list, start=None):
     """
     Wykonuje algorytm Prima na grafie przedstawionym jako tablica dwuwymiarowa:
-      [[u, waga, v], [u, waga, v], ...]
-
-    Funkcja pracuje bezpośrednio na podanej tablicy krawędzi, nie konwertując jej do innej reprezentacji.
-
-    Zwraca:
-      mst_edges - lista krawędzi MST w tym samym formacie.
     """
     # Ustalamy zbiór wierzchołków występujących w grafie
     vertices = set()
@@ -371,7 +316,6 @@ def prim_mst_edge_list(edge_list, start=None):
         vertices.add(u)
         vertices.add(v)
 
-    # Jeśli nie podano wierzchołka startowego, wybieramy dowolny z grafu
     if start is None:
         start = next(iter(vertices))
 
@@ -409,18 +353,6 @@ def prim_mst_edge_list(edge_list, start=None):
     return mst_edges
 
 
-# Przykładowe użycie:
-# edge_list = [
-#     [0, 5, 1],
-#     [0, 3, 2],
-#     [1, 2, 2],
-#     [1, 6, 3],
-#     [2, 7, 3],
-#     [2, 4, 4],
-#     [3, 1, 4]
-# ]
-# mst = prim_mst_direct(edge_list)
-# print("Krawędzie MST:", mst)
 
 
 def cost_edge_list(edges):
@@ -431,9 +363,6 @@ def kruskal_mst_edge_list(edge_list):
     """
     Wykonuje algorytm Kruskala na grafie przedstawionym jako lista krawędzi w formacie:
       [wierzchołek, waga, wierzchołek].
-
-    Zwraca:
-      mst_edges - lista krawędzi należących do MST, w tym samym formacie.
     """
     # Wyznaczamy zbiór wszystkich wierzchołków w grafie
     vertices = set()
@@ -478,32 +407,11 @@ def kruskal_mst_edge_list(edge_list):
     return mst_edges
 
 
-# Przykładowe użycie:
-# edge_list = [
-#     [0, 5, 1],
-#     [0, 3, 2],
-#     [1, 2, 2],
-#     [1, 6, 3],
-#     [2, 7, 3],
-#     [2, 4, 4],
-#     [3, 1, 4]
-# ]
-# mst = kruskal_mst_from_edge_list(edge_list)
-# print("Krawędzie MST (Kruskal):", mst)
 
 
 def dijkstra_edge_list(edge_list, start=0):
     """
-    Wykonuje algorytm Dijkstry na grafie reprezentowanym bezpośrednio jako lista krawędzi:
-      [wierzchołek, koszt, wierzchołek]
-
-    Argumenty:
-      - edge_list: lista krawędzi, np. [[0, 5, 1], [0, 3, 2], [1, 2, 2], ...]
-      - start: wierzchołek startowy
-
-    Zwraca:
-      - distances: słownik, gdzie kluczem jest wierzchołek, a wartością najkrótszy koszt dotarcia od 'start'
-      - previous: słownik poprzedników na najkrótszej ścieżce (umożliwiający odtworzenie ścieżki)
+    Wykonuje algorytm Dijkstry na grafie reprezentowanym bezpośrednio jako tablica tablic
     """
     # Wyznaczamy zbiór wszystkich wierzchołków
     vertices = set()
@@ -544,29 +452,10 @@ def dijkstra_edge_list(edge_list, start=0):
     return distances, previous
 
 
-# Przykładowe użycie:
-# edge_list = [
-#     [0, 5, 1],
-#     [0, 3, 2],
-#     [1, 2, 2],
-#     [1, 6, 3],
-#     [2, 7, 3],
-#     [2, 4, 4],
-#     [3, 1, 4]
-# ]
-# start_vertex = 0
-# distances, previous = dijkstra_direct(edge_list, start_vertex)
-# print("Najkrótsze odległości:", distances)
-# print("Poprzednicy:", previous)
-
-
 def reconstruct_shortest_paths_edge_list(distances, previous):
     """
     Rekonstruuje najkrótsze ścieżki dla wszystkich wierzchołków na podstawie
     słowników distances i previous.
-
-    Zwraca listę napisów w formacie:
-      "Do wierzchołka X: koszt = Y, ścieżka = [lista wierzchołków]"
     """
     result = []
     for vertex in sorted(distances.keys()):
@@ -580,13 +469,6 @@ def reconstruct_shortest_paths_edge_list(distances, previous):
 
         result.append(f"Do wierzchołka {vertex}: koszt = {distances[vertex]}, ścieżka = {path}")
     return result
-
-
-# Przykładowe użycie:
-# distances, previous = dijkstra_direct(edge_list, start_vertex)
-# paths = reconstruct_shortest_paths(distances, previous)
-# for line in paths:
-#     print(line)
 
 
 if __name__ == '__main__':
