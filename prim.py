@@ -546,7 +546,7 @@ if __name__ == '__main__':
 
 
     # Wykonanie algorytmu Dijkstry na tym samym grafie G
-    start_node = 0  # Możesz zmienić wierzchołek startowy
+    start_node = 0
     distances, previous = dijkstra(G, start_node)
 
     # Odtwarzamy ścieżki dla każdego wierzchołka
@@ -600,8 +600,7 @@ if __name__ == '__main__':
     cost_mst_adj_kruskal = calculate_mst_cost_dict(mst_adj_kruskal)
     print("całkowity koszt minimalnego drzewa Prim: ", cost_mst_adj_kruskal)
 
-# Wykonanie algorytmu Dijkstry na tym samym grafie G
-    start_node = 0  # Możesz zmienić wierzchołek startowy
+    start_node = 0
     distances, previous = dijkstra_mst_from_adj(adj_dict, start_node)
 
     # Odtwarzamy ścieżki dla każdego wierzchołka
