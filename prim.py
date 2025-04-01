@@ -6,6 +6,7 @@ import heapq
 
 matplotlib.use('TkAgg')  # Zmiana backendu na TkAgg, aby uniknąć błędu
 
+
 def prim_mst(G, start=0):
     """
     Implementacja algorytmu Prima dla grafu G zaczynając od wierzchołka start.
@@ -482,7 +483,7 @@ if __name__ == '__main__':
 
     # Obliczenie całkowitego kosztu MST (suma wag krawędzi)
     total_cost = sum(weight for _, _, weight in mst_edges)
-    print("Całkowity koszt MST (Prim):", total_cost)
+    print("Całkowity koszt MST (Prim NetworkX):", total_cost)
 
     # Utwórz nowy graf zawierający jedynie krawędzie MST
     MST = nx.Graph()
@@ -515,7 +516,7 @@ if __name__ == '__main__':
 
     # Obliczenie całkowitego kosztu MST (suma wag krawędzi)
     total_cost_kruskal = sum(weight for _, _, weight in mst_edges_kruskal)
-    print("Całkowity koszt MST (Kruskal):", total_cost_kruskal)
+    print("Całkowity koszt MST (Kruskal NetworkX):", total_cost_kruskal)
 
     # Budujemy graf reprezentujący MST uzyskane algorytmem Kruskala
     MST_kruskal = nx.Graph()
@@ -555,7 +556,7 @@ if __name__ == '__main__':
         shortest_paths[node] = reconstruct_path(previous, start_node, node)
 
     # Wypisanie wyników w konsoli
-    print("Najkrótsze ścieżki z wierzchołka", start_node)
+    print("Najkrótsze ścieżki z wierzchołka (NetworkX) ", start_node)
     for node in G.nodes():
         print(f"Do wierzchołka {node}: koszt = {distances[node]}, ścieżka = {shortest_paths[node]}")
 
@@ -591,14 +592,14 @@ if __name__ == '__main__':
 
     adj_dict = convert_graph_to_adj_dict(G)
     mst_adj_prim = prim_mst_from_adj(adj_dict)
-    print("prim słownik sąsiedztwa minimalnego drzewa: ", mst_adj_prim)
+    print("\nPrim słownik sąsiedztwa minimalnego drzewa: ", mst_adj_prim)
     cost_mst_adj = calculate_mst_cost_dict(mst_adj_prim)
-    print("całkowity koszt minimalnego drzewa Prim: ", cost_mst_adj)
+    print("Całkowity koszt MST (Prim Słownik sąsiedztwa): ", cost_mst_adj)
 
     mst_adj_kruskal = kruskal_mst_from_adj(adj_dict)
     print("Kruskal słownik sąsiedztwa minimalnego drzewa: ", mst_adj_kruskal)
     cost_mst_adj_kruskal = calculate_mst_cost_dict(mst_adj_kruskal)
-    print("całkowity koszt minimalnego drzewa Prim: ", cost_mst_adj_kruskal)
+    print("Całkowity koszt MST (Kruskal Słownik sąsiedztwa): ", cost_mst_adj_kruskal)
 
     start_node = 0
     distances, previous = dijkstra_mst_from_adj(adj_dict, start_node)
@@ -609,7 +610,7 @@ if __name__ == '__main__':
         shortest_paths[node] = reconstruct_path(previous, start_node, node)
 
     # Wypisanie wyników w konsoli
-    print("Najkrótsze ścieżki z wierzchołka", start_node)
+    print("Najkrótsze ścieżki z wierzchołka (Słownik sąsiedztwa) ", start_node)
     for node in G.nodes():
         print(f"Do wierzchołka {node}: koszt = {distances[node]}, ścieżka = {shortest_paths[node]}")
 
@@ -618,11 +619,12 @@ if __name__ == '__main__':
     G_edge_list = convert_networkx_to_edge_list(G)
     edge_list_mst_prim = prim_mst_edge_list(G_edge_list)
     cost_edge_list_mst_prim = cost_edge_list(edge_list_mst_prim)
-    print(cost_edge_list_mst_prim)
+    print("\nCałkowity koszt MST (Prim Tablica krawędzi): ", cost_edge_list_mst_prim)
     edge_list_mst_kruskal = kruskal_mst_edge_list(G_edge_list)
     cost_edge_list_mst_kruskal = cost_edge_list(edge_list_mst_kruskal)
-    print(cost_edge_list_mst_kruskal)
-    shortest_paths_edge_list_distances, shortest_paths_edge_list_previous = dijkstra_edge_list(G_edge_list)
+    print("Całkowity koszt MST (Kruskal Tablica krawędzi): ", cost_edge_list_mst_kruskal)
+    shortest_paths_edge_list_distances, shortest_paths_edge_list_previous = dijkstra_edge_list(G_edge_list, start_node)
     paths = reconstruct_shortest_paths_edge_list(shortest_paths_edge_list_distances, shortest_paths_edge_list_previous)
+    print("Najkrótsze ścieżki z wierzchołka (Tablica krawędzi) ", start_node)
     for line in paths:
         print(line)
